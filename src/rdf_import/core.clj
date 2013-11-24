@@ -28,7 +28,8 @@
         ("xsd" "http://www.w3.org/2001/XMLSchema#")
         ("dc" "http://purl.org/dc/elements/1.1/")
         ("dcterms" "http://purl.org/dc/terms/")
-        ("dcam" "http://purl.org/dc/dcam/"))))
+        ("dcam" "http://purl.org/dc/dcam/")
+       ("pgterms" "http://www.gutenberg.org/2009/pgterms/"))))
 
 (def tstore (init-kb (kb-memstore)))
 
@@ -37,7 +38,10 @@
   [k rdf-file]
   (load-rdf-file k rdf-file))
 
-(def q '((?/b dcterms/title ?/title )))
+(def q '((?/b dcterms/title ?/title )
+          (?/b dcterms/creator ?/creator)
+          (?/creator pgterms/alias ?/agent)
+          (:union ((?/format dcterms/isFormatOf ?/b )))))
 
 ;;;(def rdf-file-location "/home/geraud/projets/cache/epub/11511/pg11511.rdf")
 ;;;(load-data tstore (File. rdf-file-location) q)
@@ -54,4 +58,22 @@
   (take 10 rdf-file-seq)))
 
 (clojure.pprint/pprint (query tstore q))
+(to-dataset (map (fn [b]
+       (into {} (map (fn[[k v]]
+                [(keyword (name k)) (clojure.string/replace v #"\n" " ")]) b)))
+  (query tstore q)))
 
+(def result (map (fn [b]
+                   (into {} (map (fn[[k v]]
+                                   [(keyword (name k)) (clojure.string/replace v #"\n" " ")]) b)))
+              (query tstore q)))
+
+(clojure.pprint/pprint (reduce (fn [acc tuple ]
+          (let [{key :b} tuple]
+            (merge acc {(keyword key)
+                        (merge tuple (:format tuple))) {} result ))
+
+(let [{key :b} {:b "toto", :a 'youpi}]
+  key)
+
+(:b {:b "toto", :a 'youpi})
