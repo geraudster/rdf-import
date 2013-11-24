@@ -63,17 +63,22 @@
                 [(keyword (name k)) (clojure.string/replace v #"\n" " ")]) b)))
   (query tstore q)))
 
+(defn aggregate-book [acc tuple ]
+    (let [{key :b} tuple
+          key-keyword (keyword key)]
+      (->> {key-keyword tuple}
+        (merge-with (fn [res latter]
+                      (merge res {:format (append-format (:format latter) (:format res))} ))
+          acc ))))
+
+(defn append-format [f formats]
+  (flatten (conj (list f) formats)))
+
 (def result (map (fn [b]
                    (into {} (map (fn[[k v]]
                                    [(keyword (name k)) (clojure.string/replace v #"\n" " ")]) b)))
               (query tstore q)))
 
-(clojure.pprint/pprint (reduce (fn [acc tuple ]
-          (let [{key :b} tuple]
-            (merge acc {(keyword key)
-                        (merge tuple (:format tuple))) {} result ))
-
-(let [{key :b} {:b "toto", :a 'youpi}]
-  key)
-
-(:b {:b "toto", :a 'youpi})
+(def aggregated-results (reduce aggregate-book {} result))
+(clojure.pprint/pprint aggregated-results)
+(to-dataset (vals aggregated-results))
